@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VLOSLP Mortality Calculator</title>
+    <!-- This link gives the website a clean, professional medical look -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding: 40px; }
+        .calculator-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        .result-box { background: #e9ecef; padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="calculator-card">
+        <h3 class="mb-4 text-center">VLOSLP 5-Year Mortality Risk</h3>
+        
+        <!-- The Inputs -->
+        <div class="mb-3">
+            <label class="form-label">Age at Onset (Years)</label>
+            <input type="number" id="age" class="form-control" value="75">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">History of Diabetes</label>
+            <select id="diabetes" class="form-select">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary w-100" onclick="calculateRisk()">Calculate Risk</button>
+
+        <!-- The Output -->
+        <div class="result-box mt-4">
+            <h5>Estimated 5-Year Mortality Risk:</h5>
+            <h1 id="result" class="text-danger">-- %</h1>
+        </div>
+    </div>
+</div>
+
+<!-- The Math (JavaScript) -->
+<script>
+    function calculateRisk() {
+        // 1. Get user inputs
+        let age = parseFloat(document.getElementById('age').value);
+        let diabetes = parseFloat(document.getElementById('diabetes').value);
+
+        // 2. Insert your extracted R coefficients here!
+        let beta_age = 0.05;      // Replace with your real coef
+        let beta_diabetes = 0.42; // Replace with your real coef
+        
+        let S0 = 0.85;            // Replace with your real baseline survival at 5 years
+
+        // 3. Calculate the Prognostic Index (PI)
+        // Note: Subtract the mean age if your model used centered variables!
+        let PI = (beta_age * age) + (beta_diabetes * diabetes);
+
+        // 4. Calculate final survival and mortality
+        let survivalProb = Math.pow(S0, Math.exp(PI));
+        let mortalityRisk = (1 - survivalProb) * 100;
+
+        // 5. Display the result on the screen
+        document.getElementById('result').innerText = mortalityRisk.toFixed(1) + "%";
+    }
+</script>
+
+</body>
+</html>
