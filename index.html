@@ -128,7 +128,7 @@
         let b_lymph = 0.66777; let b_metacanc = 1.24170; let b_solidtum = 0.42906; let b_pvd = 0.09546;
         let b_coag = 0.10323; let b_valv = 0.14195; let b_pcd = 0.14799; let b_aids = 0.75431;
 
-        let mean_age = 0; // Update this!
+        let mean_age = 75; // Update this!
 
         // 3. Calculate PI and Hazard Ratio
         let PI = (b_age * (age - mean_age)) + (b_sex * sex) + (b_rf * rf) + (b_ld * ld) + 
@@ -209,3 +209,4 @@
 
 </body>
 </html>
+
