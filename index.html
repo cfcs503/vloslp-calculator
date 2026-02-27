@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VLOSLP 5-Year Mortality Risk Calculator</title>
-    <!-- Bootstrap CSS for layout -->
+    <title>VLOSLP Mortality Risk Calculator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Chart.js for the Survival Curve -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f4f7f6; padding-top: 30px; padding-bottom: 40px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -16,31 +14,47 @@
         .form-check-label { margin-left: 10px; cursor: pointer; font-weight: 500; color: #495057; }
         .section-title { font-size: 1.1rem; color: #6c757d; border-bottom: 2px solid #f8f9fa; padding-bottom: 5px; margin-top: 20px; margin-bottom: 15px; }
         canvas { max-height: 350px; }
+        .model-selector { background-color: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #90caf9; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2 class="mb-1 text-center">VLOSLP Mortality Calculator</h2>
-    <p class="text-muted text-center mb-4">Predicts mortality risk following Very-Late-Onset Schizophrenia-Like Psychosis</p>
+    <p class="text-muted text-center mb-4">Predicts 5-year mortality risk in older adults with Very-Late-Onset Schizophrenia-Like Psychosis</p>
     
     <div class="row">
         <!-- LEFT COLUMN: INPUTS -->
         <div class="col-lg-7">
             <div class="calculator-card">
-                <!-- Demographics -->
-                <div class="section-title mt-0">Patient Demographics</div>
+                
+                <!-- Model Selection Toggle -->
+                <div class="model-selector">
+                    <label class="form-label fw-bold text-primary">Select Prediction Model:</label>
+                    <select id="model_type" class="form-select border-primary" onchange="toggleInputs(); calculateRisk();">
+                        <option value="full">VLOSLP-Full Model (Includes Demographics, Comorbidities & Utilization)</option>
+                        <option value="ci">VLOSLP-CI Model (Demographics & Comorbidities Only)</option>
+                    </select>
+                </div>
+
+                <!-- Demographics & Utilization -->
+                <div class="section-title mt-0">Demographics & Utilization</div>
                 <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">Age at Onset (Years)</label>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Age at Onset</label>
                         <input type="number" id="onset_age" class="form-control" value="75" min="60" max="110">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold">Biological Sex</label>
                         <select id="sex" class="form-select">
                             <option value="0">Female</option>
                             <option value="1">Male</option>
                         </select>
+                    </div>
+                    <!-- This div will hide when the CI model is selected -->
+                    <div class="col-md-4" id="utilization_div">
+                        <label class="form-label fw-bold">Prior IP Visits</label>
+                        <input type="number" id="ip_baseline" class="form-control" value="0" min="0" title="Number of inpatient admissions prior to onset">
                     </div>
                 </div>
 
@@ -48,18 +62,33 @@
                 <div class="section-title">Comorbidities</div>
                 <div class="row">
                     <div class="col-md-6">
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="chf"><label class="form-check-label" for="chf">Congestive Heart Failure</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="carit"><label class="form-check-label" for="carit">Cardiac Arrhythmias</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="valv"><label class="form-check-label" for="valv">Valvular Disease</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="pcd"><label class="form-check-label" for="pcd">Pulmonary Circ. Disease</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="pvd"><label class="form-check-label" for="pvd">Peripheral Vascular Dis.</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="cpd"><label class="form-check-label" for="cpd">Chronic Pulmonary Dis.</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="diabunc"><label class="form-check-label" for="diabunc">Diabetes, Uncomplicated</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="diabc"><label class="form-check-label" for="diabc">Diabetes, Complicated</label></div>
                         <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="rf"><label class="form-check-label" for="rf">Renal Failure</label></div>
                         <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="ld"><label class="form-check-label" for="ld">Liver Disease</label></div>
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="pvd"><label class="form-check-label" for="pvd">Peripheral Vascular Disorder</label></div>
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="coag"><label class="form-check-label" for="coag">Coagulopathy</label></div>
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="valv"><label class="form-check-label" for="valv">Valvular Disease</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="solidtum"><label class="form-check-label" for="solidtum">Solid Tumor</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="metacanc"><label class="form-check-label" for="metacanc">Metastatic Cancer</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="lymph"><label class="form-check-label" for="lymph">Lymphoma</label></div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="pcd"><label class="form-check-label" for="pcd">Pulmonary Circulation Disorder</label></div>
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="solidtum"><label class="form-check-label" for="solidtum">Solid Tumor</label></div>
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="lymph"><label class="form-check-label" for="lymph">Lymphoma</label></div>
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="metacanc"><label class="form-check-label" for="metacanc">Metastatic Cancer</label></div>
                         <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="aids"><label class="form-check-label" for="aids">HIV / AIDS</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="coag"><label class="form-check-label" for="coag">Coagulopathy</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="wloss"><label class="form-check-label" for="wloss">Weight Loss</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="fed"><label class="form-check-label" for="fed">Fluid/Electrolyte Dis.</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="blane"><label class="form-check-label" for="blane">Blood Loss Anemia</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="dane"><label class="form-check-label" for="dane">Deficiency Anemia</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="ond"><label class="form-check-label" for="ond">Other Neurological Dis.</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="para"><label class="form-check-label" for="para">Paralysis</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="hypothy"><label class="form-check-label" for="hypothy">Hypothyroidism</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="rheumd"><label class="form-check-label" for="rheumd">Rheumatoid Arthritis</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="pud"><label class="form-check-label" for="pud">Peptic Ulcer Disease</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="alcohol"><label class="form-check-label" for="alcohol">Alcohol Abuse</label></div>
                     </div>
                 </div>
 
@@ -67,9 +96,8 @@
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: OUTPUTS (Summary & Chart) -->
+        <!-- RIGHT COLUMN: OUTPUTS -->
         <div class="col-lg-5">
-            <!-- Big Number Result -->
             <div class="calculator-card mb-4" style="padding: 20px;">
                 <div class="result-box">
                     <h5 class="text-secondary">Estimated 5-Year Mortality Risk</h5>
@@ -78,23 +106,7 @@
                 </div>
             </div>
 
-            <!-- Summary Table -->
             <div class="calculator-card mb-4" style="padding: 20px;">
-                <h5 class="text-center mb-3">Model Summary</h5>
-                <table class="table table-sm table-bordered mb-0">
-                    <tbody>
-                        <tr><td class="bg-light"><strong>Prognostic Index (PI)</strong></td><td id="table-pi">--</td></tr>
-                        <tr><td class="bg-light"><strong>Hazard Ratio (vs Average)</strong></td><td id="table-hr">--</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- BOTTOM ROW: SURVIVAL PLOT -->
-    <div class="row">
-        <div class="col-12">
-            <div class="calculator-card">
                 <h5 class="text-center mb-3">Predicted Survival Curve (0 to 5 Years)</h5>
                 <canvas id="survivalChart"></canvas>
             </div>
@@ -103,113 +115,138 @@
 </div>
 
 <script>
-    // Initialize empty chart variable
     let survivalChartInstance = null;
 
-    // --- YOUR R MODEL BASELINE SURVIVAL ARRAYS ---
-    // To make a curve, you need the baseline survival at multiple time points (Years 1, 2, 3, 4, 5).
-    // REPLACE THESE WITH YOUR ACTUAL basehaz() NUMBERS AT DAYS 365, 730, 1095, 1460, 1825.
-    const timePoints = [0, 1, 2, 3, 4, 5]; // Years
-    const baselineSurvival = [1.0000, 0.8513, 0.7587, 0.6716, 0.5824, 0.5368]; // Example S0 values
+    // --- BASELINE SURVIVALS (S0) FOR THE TWO MODELS ---
+    // You must update these arrays using basehaz() for BOTH models!
+    const timePoints = [0, 1, 2, 3, 4, 5]; 
+    const baselineSurvival_FULL = [1.000, 0.965, 0.930, 0.890, 0.865, 0.850]; // S0 for Full model
+    const baselineSurvival_CI =   [1.000, 0.960, 0.925, 0.880, 0.855, 0.840]; // S0 for CI model
     
+    // UI logic: Hide the IP visits box if they choose the CI model
+    function toggleInputs() {
+        let modelType = document.getElementById('model_type').value;
+        if (modelType === 'ci') {
+            document.getElementById('utilization_div').style.display = 'none';
+        } else {
+            document.getElementById('utilization_div').style.display = 'block';
+        }
+    }
+
     function calculateRisk() {
-        // 1. Get Inputs
+        let modelType = document.getElementById('model_type').value;
+
+        // 1. Get Base Inputs
         let age = parseFloat(document.getElementById('onset_age').value);
         let sex = parseFloat(document.getElementById('sex').value);
+        let ip_baseline = modelType === 'full' ? parseFloat(document.getElementById('ip_baseline').value) : 0;
         
+        let chf = document.getElementById('chf').checked ? 1 : 0; let carit = document.getElementById('carit').checked ? 1 : 0;
+        let pcd = document.getElementById('pcd').checked ? 1 : 0; let pvd = document.getElementById('pvd').checked ? 1 : 0;
+        let ond = document.getElementById('ond').checked ? 1 : 0; let cpd = document.getElementById('cpd').checked ? 1 : 0;
+        let diabunc = document.getElementById('diabunc').checked ? 1 : 0; let diabc = document.getElementById('diabc').checked ? 1 : 0;
         let rf = document.getElementById('rf').checked ? 1 : 0; let ld = document.getElementById('ld').checked ? 1 : 0;
         let lymph = document.getElementById('lymph').checked ? 1 : 0; let metacanc = document.getElementById('metacanc').checked ? 1 : 0;
-        let solidtum = document.getElementById('solidtum').checked ? 1 : 0; let pvd = document.getElementById('pvd').checked ? 1 : 0;
-        let coag = document.getElementById('coag').checked ? 1 : 0; let valv = document.getElementById('valv').checked ? 1 : 0;
-        let pcd = document.getElementById('pcd').checked ? 1 : 0; let aids = document.getElementById('aids').checked ? 1 : 0;
+        let solidtum = document.getElementById('solidtum').checked ? 1 : 0; let wloss = document.getElementById('wloss').checked ? 1 : 0;
+        let fed = document.getElementById('fed').checked ? 1 : 0; let valv = document.getElementById('valv').checked ? 1 : 0;
+        let blane = document.getElementById('blane').checked ? 1 : 0; let coag = document.getElementById('coag').checked ? 1 : 0;
+        let hypothy = document.getElementById('hypothy').checked ? 1 : 0; let rheumd = document.getElementById('rheumd').checked ? 1 : 0;
+        let aids = document.getElementById('aids').checked ? 1 : 0; let dane = document.getElementById('dane').checked ? 1 : 0;
+        let para = document.getElementById('para').checked ? 1 : 0; let pud = document.getElementById('pud').checked ? 1 : 0;
+        let alcohol = document.getElementById('alcohol').checked ? 1 : 0;
 
-        // 2. Beta Coefficients
-        let b_age = 0.06231; let b_sex = 0.54207; let b_rf = 0.37804; let b_ld = 0.13423;
-        let b_lymph = 0.66777; let b_metacanc = 1.24170; let b_solidtum = 0.42906; let b_pvd = 0.09546;
-        let b_coag = 0.10323; let b_valv = 0.14195; let b_pcd = 0.14799; let b_aids = 0.75431;
+        let PI = 0;
+        let currentBaselineSurvival = [];
 
-        let mean_age = 75; // Update this!
+        // --- MODEL 1: VLOSLP-FULL MODEL ---
+        if (modelType === 'full') {
+            currentBaselineSurvival = baselineSurvival_FULL;
+            // The Beta Coefficients for FULL Model
+            let b_age = 0.051840; let b_sex = 0.488768; let b_ip = 0.002325;
+            let b_chf = 0.301472; let b_carit = 0.154574; let b_pcd = 0.313357; let b_pvd = 0.304837; let b_ond = 0.200517; 
+            let b_cpd = 0.251493; let b_diabunc = 0.094160; let b_diabc = 0.313220; let b_rf = 0.616532; let b_ld = 0.343337; 
+            let b_lymph = 0.679974; let b_metacanc = 2.006973; let b_solidtum = 0.631038; let b_wloss = 0.185340; let b_fed = 0.214873; 
+            let b_valv = 0.218320; let b_blane = 0.235854; let b_coag = 0.226639; let b_hypothy = 0.130066; let b_rheumd = 0.149075; 
+            let b_aids = 1.216029; let b_dane = 0.085101; let b_para = 0.087609; let b_pud = 0.081279; let b_alcohol = 0.089706;
 
-        // 3. Calculate PI and Hazard Ratio
-        let PI = (b_age * (age - mean_age)) + (b_sex * sex) + (b_rf * rf) + (b_ld * ld) + 
-                 (b_lymph * lymph) + (b_metacanc * metacanc) + (b_solidtum * solidtum) + 
-                 (b_pvd * pvd) + (b_coag * coag) + (b_valv * valv) + (b_pcd * pcd) + (b_aids * aids);
-        
-        let HR = Math.exp(PI); // Hazard Ratio relative to baseline
+            let mean_age = 0; let mean_ip = 0; // Replace with actual means if centered
 
-        // 4. Update Main Numbers and Table
-        let surv5yr = Math.pow(baselineSurvival[5], HR);
+            PI = (b_age * (age - mean_age)) + (b_sex * sex) + (b_ip * (ip_baseline - mean_ip)) + 
+                 (b_chf * chf) + (b_carit * carit) + (b_pcd * pcd) + (b_pvd * pvd) + (b_ond * ond) + (b_cpd * cpd) + 
+                 (b_diabunc * diabunc) + (b_diabc * diabc) + (b_rf * rf) + (b_ld * ld) + (b_lymph * lymph) + (b_metacanc * metacanc) + 
+                 (b_solidtum * solidtum) + (b_wloss * wloss) + (b_fed * fed) + (b_valv * valv) + (b_blane * blane) + (b_coag * coag) + 
+                 (b_hypothy * hypothy) + (b_rheumd * rheumd) + (b_aids * aids) + (b_dane * dane) + (b_para * para) + (b_pud * pud) + (b_alcohol * alcohol);
+        } 
+        // --- MODEL 2: VLOSLP-CI MODEL ---
+        else if (modelType === 'ci') {
+            currentBaselineSurvival = baselineSurvival_CI;
+            
+            // !!! IMPORTANT: YOU MUST REPLACE THESE WITH THE ACTUAL COEFFICIENTS FROM YOUR CI MODEL !!!
+            // (I have copied the full model numbers as placeholders, you must change them!)
+            let b_age = 0.051840; let b_sex = 0.488768; 
+            let b_chf = 0.301472; let b_carit = 0.154574; let b_pcd = 0.313357; let b_pvd = 0.304837; let b_ond = 0.200517; 
+            let b_cpd = 0.251493; let b_diabunc = 0.094160; let b_diabc = 0.313220; let b_rf = 0.616532; let b_ld = 0.343337; 
+            let b_lymph = 0.679974; let b_metacanc = 2.006973; let b_solidtum = 0.631038; let b_wloss = 0.185340; let b_fed = 0.214873; 
+            let b_valv = 0.218320; let b_blane = 0.235854; let b_coag = 0.226639; let b_hypothy = 0.130066; let b_rheumd = 0.149075; 
+            let b_aids = 1.216029; let b_dane = 0.085101; let b_para = 0.087609; let b_pud = 0.081279; let b_alcohol = 0.089706;
+
+            let mean_age = 0; // Replace with actual mean if centered
+
+            PI = (b_age * (age - mean_age)) + (b_sex * sex) + 
+                 (b_chf * chf) + (b_carit * carit) + (b_pcd * pcd) + (b_pvd * pvd) + (b_ond * ond) + (b_cpd * cpd) + 
+                 (b_diabunc * diabunc) + (b_diabc * diabc) + (b_rf * rf) + (b_ld * ld) + (b_lymph * lymph) + (b_metacanc * metacanc) + 
+                 (b_solidtum * solidtum) + (b_wloss * wloss) + (b_fed * fed) + (b_valv * valv) + (b_blane * blane) + (b_coag * coag) + 
+                 (b_hypothy * hypothy) + (b_rheumd * rheumd) + (b_aids * aids) + (b_dane * dane) + (b_para * para) + (b_pud * pud) + (b_alcohol * alcohol);
+        }
+
+        let HR = Math.exp(PI); 
+
+        // 4. Final Output
+        let surv5yr = Math.pow(currentBaselineSurvival[5], HR);
+        if (surv5yr > 1) surv5yr = 1; if (surv5yr < 0) surv5yr = 0;
         let mort5yr = (1 - surv5yr) * 100;
 
         document.getElementById('result').innerText = mort5yr.toFixed(1) + "%";
         document.getElementById('surv-text').innerText = "Survival Probability: " + (surv5yr * 100).toFixed(1) + "%";
-        document.getElementById('table-pi').innerText = PI.toFixed(3);
-        document.getElementById('table-hr').innerText = HR.toFixed(2);
 
-        // 5. Generate Data for the Survival Curve
-        let patientSurvivalData = baselineSurvival.map(S0 => Math.pow(S0, HR));
-
-        // 6. Draw/Update the Chart
+        // 5. Generate Chart
+        let patientSurvivalData = currentBaselineSurvival.map(S0 => Math.pow(S0, HR));
         drawChart(patientSurvivalData);
     }
 
     function drawChart(patientData) {
         const ctx = document.getElementById('survivalChart').getContext('2d');
-        
-        // Destroy old chart if it exists so we can draw a new one
-        if (survivalChartInstance) {
-            survivalChartInstance.destroy();
-        }
+        if (survivalChartInstance) { survivalChartInstance.destroy(); }
 
         survivalChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: timePoints,
                 datasets: [{
-                    label: 'Predicted Survival Probability',
+                    label: 'Predicted Survival',
                     data: patientData,
                     borderColor: '#0d6efd',
                     backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.3, // Makes the curve smooth
-                    pointRadius: 5,
-                    pointBackgroundColor: '#0d6efd'
+                    borderWidth: 3, fill: true, tension: 0.3, pointRadius: 4
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 scales: {
-                    y: {
-                        min: 0,
-                        max: 1,
-                        title: { display: true, text: 'Survival Probability', font: {weight: 'bold'} }
-                    },
-                    x: {
-                        title: { display: true, text: 'Years Since Onset', font: {weight: 'bold'} }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Survival: ' + (context.parsed.y * 100).toFixed(1) + '%';
-                            }
-                        }
-                    }
+                    y: { min: 0, max: 1, title: { display: true, text: 'Survival Prob' } },
+                    x: { title: { display: true, text: 'Years Since Onset' } }
                 }
             }
         });
     }
-
-    // Run once on page load to show initial generic data
-    window.onload = calculateRisk;
+    
+    // Initialize the page on load
+    window.onload = function() {
+        toggleInputs();
+        calculateRisk();
+    };
 </script>
-
 </body>
 </html>
-
-
 
 
