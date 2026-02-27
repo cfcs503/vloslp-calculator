@@ -190,7 +190,7 @@
             let b_valv = 0.218320; let b_blane = 0.235854; let b_coag = 0.226639; let b_hypothy = 0.130066; let b_rheumd = 0.149075; 
             let b_aids = 1.216029; let b_dane = 0.085101; let b_para = 0.087609; let b_pud = 0.081279; let b_alcohol = 0.089706;
 
-            let mean_age = 0; // Replace with actual mean if centered
+            let mean_age = 75; // Replace with actual mean if centered
 
             PI = (b_age * (age - mean_age)) + (b_sex * sex) + 
                  (b_chf * chf) + (b_carit * carit) + (b_pcd * pcd) + (b_pvd * pvd) + (b_ond * ond) + (b_cpd * cpd) + 
@@ -248,6 +248,7 @@
 </script>
 </body>
 </html>
+
 
 
 
